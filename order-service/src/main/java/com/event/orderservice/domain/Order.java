@@ -11,7 +11,7 @@ public class Order {
     private final BigDecimal amount;
     private final OrderStatus status;
     private final Instant createdAt;
-    private final long version;
+    private final long version; // wired to real optimistic-locking behavior on Day 6
 
     public Order(String id, String customerId, BigDecimal amount, OrderStatus status, Instant createdAt, long version) {
         this.id = id;
@@ -27,22 +27,11 @@ public class Order {
     }
 
     public Order markConfirmed() {
-        return withStatus(OrderStatus.CONFIRMED);
+        return new Order(id, customerId, amount, OrderStatus.CONFIRMED, createdAt, version);
     }
 
     public Order markFailed() {
-        return withStatus(OrderStatus.FAILED);
-    }
-
-    public Order markCancelled() {
-        if (status == OrderStatus.CANCELLED) {
-            throw new IllegalStateException("Order " + id + " is already cancelled");
-        }
-        return withStatus(OrderStatus.CANCELLED);
-    }
-
-    private Order withStatus(OrderStatus newStatus) {
-        return new Order(id, customerId, amount, newStatus, createdAt, version);
+        return new Order(id, customerId, amount, OrderStatus.FAILED, createdAt, version);
     }
 
     public String getId() { return id; }

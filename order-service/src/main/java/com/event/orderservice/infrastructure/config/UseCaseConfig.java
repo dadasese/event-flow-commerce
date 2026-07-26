@@ -1,6 +1,5 @@
 package com.event.orderservice.infrastructure.config;
 
-import com.event.orderservice.application.CancelOrderUseCase;
 import com.event.orderservice.application.CreateOrderUseCase;
 import com.event.orderservice.domain.InventoryClientPort;
 import com.event.orderservice.domain.OrderRepositoryPort;
