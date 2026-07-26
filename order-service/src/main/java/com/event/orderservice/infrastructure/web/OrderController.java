@@ -1,6 +1,5 @@
 package com.event.orderservice.infrastructure.web;
 
-import com.event.orderservice.application.CancelOrderUseCase;
 import com.event.orderservice.application.CreateOrderUseCase;
 import com.event.orderservice.domain.Order;
 import org.springframework.http.HttpStatus;
