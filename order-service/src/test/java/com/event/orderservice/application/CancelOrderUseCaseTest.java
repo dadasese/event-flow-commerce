@@ -41,4 +41,19 @@ class CancelOrderUseCaseTest {
 
         verify(orderRepository).save(argThat(o -> o.getStatus() == OrderStatus.CANCELLED));
     }
+
+    @Test
+    void throwsWhenOrderIsAlreadyCancelled() {
+        CancelOrderUseCase useCase = new CancelOrderUseCase(orderRepository);
+
+        Order alreadyCancelled = new Order("ORD-2", "CUST-2", BigDecimal.ONE,
+                OrderStatus.CANCELLED, Instant.now(), 0);
+        when(orderRepository.findById("ORD-2")).thenReturn(Mono.just(alreadyCancelled));
+
+        StepVerifier.create(useCase.execute("ORD-2"))
+                .expectErrorMatches(ex -> ex instanceof IllegalStateException)
+                .verify();
+
+        verify(orderRepository, never()).save(any());
+    }
 }
