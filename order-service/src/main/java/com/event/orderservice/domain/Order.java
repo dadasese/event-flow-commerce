@@ -1,9 +1,12 @@
 package com.event.orderservice.domain;
 
+import lombok.Getter;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Objects;
 
+@Getter
 public class Order {
 
     private final String id;
@@ -27,11 +30,22 @@ public class Order {
     }
 
     public Order markConfirmed() {
-        return new Order(id, customerId, amount, OrderStatus.CONFIRMED, createdAt, version);
+        return withStatus(OrderStatus.CONFIRMED);
     }
 
     public Order markFailed() {
-        return new Order(id, customerId, amount, OrderStatus.FAILED, createdAt, version);
+        return withStatus(OrderStatus.FAILED);
+    }
+
+    public Order markCancelled() {
+        if (status == OrderStatus.CANCELLED) {
+            throw new IllegalStateException("Order " + id + " is already cancelled");
+        }
+        return withStatus(OrderStatus.CANCELLED);
+    }
+
+    private Order withStatus(OrderStatus newStatus) {
+        return new Order(id, customerId, amount, newStatus, createdAt, version);
     }
 
     public String getId() { return id; }
@@ -40,4 +54,5 @@ public class Order {
     public OrderStatus getStatus() { return status; }
     public Instant getCreatedAt() { return createdAt; }
     public long getVersion() { return version; }
+
 }
