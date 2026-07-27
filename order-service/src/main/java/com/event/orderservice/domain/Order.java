@@ -26,6 +26,10 @@ public class Order {
         return new Order(null, customerId, amount, OrderStatus.PENDING, Instant.now(), 0);
     }
 
+    public Order markCancelled() {
+        return new Order(id, customerId, amount, OrderStatus.CANCELLED, createdAt, version);
+    }
+
     public Order markConfirmed() {
         return new Order(id, customerId, amount, OrderStatus.CONFIRMED, createdAt, version);
     }
