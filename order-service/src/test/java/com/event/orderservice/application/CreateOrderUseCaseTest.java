@@ -1,5 +1,6 @@
 package com.event.orderservice.application;
 
+import com.event.orderservice.domain.InventoryClientPort;
 import com.event.orderservice.domain.Order;
 import com.event.orderservice.domain.OrderRepositoryPort;
 import com.event.orderservice.domain.OrderStatus;
@@ -21,37 +22,39 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class CancelOrderUseCaseTest {
+class CreateOrderUseCaseTest {
 
     @Mock
     private OrderRepositoryPort orderRepository;
 
-    @Test
-    void cancelsConfirmedOrder_andPersistsIt() {
-        CancelOrderUseCase useCase = new CancelOrderUseCase(orderRepository);
+    @Mock
+    private InventoryClientPort inventoryClient;
 
-        Order confirmedOrder = new Order("ORD-1", "CUST-1", BigDecimal.TEN,
-                OrderStatus.CONFIRMED, Instant.now(), 0);
-        when(orderRepository.findById("ORD-1")).thenReturn(Mono.just(confirmedOrder));
+    @Test
+    void createsConfirmedOrder_whenStockIsAvailable() {
+        CreateOrderUseCase useCase = new CreateOrderUseCase(orderRepository, inventoryClient);
+
+        when(inventoryClient.checkAndReserveStock("PROD-1", 2)).thenReturn(Mono.just(true));
         when(orderRepository.save(any(Order.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
-        StepVerifier.create(useCase.execute("ORD-1"))
-                .assertNext(order -> Assertions.assertEquals(OrderStatus.CANCELLED, order.getStatus()))
+        Mono<Order> result = useCase.execute("CUST-1", "PROD-1", 2, BigDecimal.valueOf(99.90));
+
+        StepVerifier.create(result)
+                .assertNext(order -> Assertions.assertEquals(OrderStatus.CONFIRMED, order.getStatus()))
                 .verifyComplete();
 
-        verify(orderRepository).save(argThat(o -> o.getStatus() == OrderStatus.CANCELLED));
+        verify(inventoryClient).checkAndReserveStock("PROD-1", 2);
     }
 
     @Test
-    void throwsWhenOrderIsAlreadyCancelled() {
-        CancelOrderUseCase useCase = new CancelOrderUseCase(orderRepository);
+    void failsFast_whenStockIsUnavailable() {
+        CreateOrderUseCase useCase = new CreateOrderUseCase(orderRepository, inventoryClient);
+        when(inventoryClient.checkAndReserveStock("PROD-2", 5)).thenReturn(Mono.just(false));
 
-        Order alreadyCancelled = new Order("ORD-2", "CUST-2", BigDecimal.ONE,
-                OrderStatus.CANCELLED, Instant.now(), 0);
-        when(orderRepository.findById("ORD-2")).thenReturn(Mono.just(alreadyCancelled));
+        Mono<Order> result = useCase.execute("CUST-2", "PROD-2", 5, BigDecimal.TEN);
 
-        StepVerifier.create(useCase.execute("ORD-2"))
+        StepVerifier.create(result)
                 .expectErrorMatches(ex -> ex instanceof IllegalStateException)
                 .verify();
 
